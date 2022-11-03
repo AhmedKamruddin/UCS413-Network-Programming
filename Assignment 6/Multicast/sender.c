@@ -9,6 +9,7 @@
 #include<stdlib.h>
 #include<string.h>
 
+/*
 struct pass_parameters
 {
     int sockfd;
@@ -23,16 +24,6 @@ void *send_message(void *context)
     if(childpid==0)
     {
         struct pass_parameters *pp=context;
-        struct sockaddr_in saddr;
-
-        bzero(&saddr, sizeof(saddr));
-        saddr.sin_family=AF_INET;
-        saddr.sin_port=htons(22000);
-        saddr.sin_addr.s_addr=inet_addr(pp->ip);
-
-        bind(pp->sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
-
-        sendto(pp->sockfd, pp->sendline, 100, 0, (struct sockaddr*)&saddr, sizeof(saddr));
         
         exit(0);
     }
@@ -51,18 +42,60 @@ int main()
 
     sockfd=socket(AF_INET, SOCK_DGRAM, 0);
 
-    bzero(sendline, sizeof(sendline));
-    fgets(sendline, 100, stdin);
-    strcpy(pp.sendline, sendline);
+    
     pp.sockfd=sockfd;
-    for(int i=0; i<n; i++)
+
+    for(;;)
     {
-        pp.ip=recipient_ip[i];
-        if(pthread_create(&thread_send_id, NULL, send_message, &pp))
+        bzero(sendline, sizeof(sendline));
+        fgets(sendline, 100, stdin);
+        strcpy(pp.sendline, sendline);
+        
+        for(int i=0; i<n; i++)
         {
-            fprintf(stderr, "Failed to create thread\n");
-            return EXIT_FAILURE;
+            pp.ip=recipient_ip[i];
+            if(pthread_create(&thread_send_id, NULL, send_message, &pp))
+            {
+                fprintf(stderr, "Failed to create thread\n");
+                return EXIT_FAILURE;
+            }
+            pthread_join(thread_send_id, NULL);
         }
-        pthread_join(thread_send_id, NULL);
     }
 }
+*/
+
+int main()
+{
+    int n=2;
+    int sockfd;
+    char sendline[100];    
+    char *recipient_ip[n];
+    recipient_ip[0]="192.168.122.125";
+    recipient_ip[1]="192.168.122.142";
+
+    sockfd=socket(AF_INET, SOCK_DGRAM, 0);
+
+    
+    for(;;)
+    {
+        bzero(sendline, sizeof(sendline));
+        fgets(sendline, 100, stdin);
+        
+        for(int i=0; i<n; i++)
+        {
+            struct sockaddr_in saddr;
+
+            bzero(&saddr, sizeof(saddr));
+            saddr.sin_family=AF_INET;
+            saddr.sin_port=htons(22000);
+            saddr.sin_addr.s_addr=inet_addr(recipient_ip[i]);
+
+            bind(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
+            
+            sendto(sockfd, sendline, 100, 0, (struct sockaddr*)&saddr, sizeof(saddr));
+            
+        }
+    }
+}
+
